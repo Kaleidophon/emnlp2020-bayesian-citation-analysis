@@ -1,0 +1,91 @@
+---
+title: "project"
+author: "anon"
+date: "11/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(aaltobda)
+library(rstan)
+library(loo)
+rstan_options (javascript = FALSE)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+
+
+
+```{r}
+list.files()
+```
+
+```{r}
+findings_df <- read.csv("findings.tsv_type.csv")
+findings_df$journal = "findings"
+findings_df
+
+main_df <- read.csv("main.tsv_type.csv")
+main_df$journal = "main"
+main_df
+
+dim(main_df)
+dim(findings_df)
+
+data <- rbind(main_df, findings_df)
+```
+```{r}
+# processed data
+sample_size <- min(dim(main_df)[1], dim(findings_df)[1])
+main_citations <- sample(main_df$Citation, size = sample_size)
+findings_citations <- sample(findings_df$Citation, size = sample_size)
+processed_data <- cbind(main_citations, findings_citations)
+```
+
+
+```{r}
+model_data <- list(N = nrow(processed_data),
+                   J = ncol(processed_data),
+                   y = processed_data)
+
+fit <- stan(file = "model.stan", 
+            data = model_data,
+            chains = 2,
+            iter = 2000,
+            warmup = 1000)
+```
+
+```{r}
+draws <- as.data.frame(fit)
+draws
+ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
+ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
+```
+
+```{r}
+seperat_loo = loo(fit)
+```
+
+
+```{r}
+findings_citations <- sample(findings_df$Citation, size = 447, replace = T)
+main_citations <- sample(main_df$Citation, size = 447, replace = T)
+
+citation_pairs <- cbind(main_citations, findings_citations)
+head(citation_pairs)
+
+```
+
+```{r}
+colMeans(citation_pairs)
+```
+
+```{r}
+all_proceedings <- rbind(findings_df, main_df)
+all_proceedings
+```
