@@ -67,25 +67,11 @@ ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
 ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
 ```
 
-```{r}
-seperat_loo = loo(fit)
-```
-
 
 ```{r}
 findings_citations <- sample(findings_df$Citation, size = 447, replace = T)
 main_citations <- sample(main_df$Citation, size = 447, replace = T)
 
 citation_pairs <- cbind(main_citations, findings_citations)
-head(citation_pairs)
-
-```
-
-```{r}
 colMeans(citation_pairs)
-```
-
-```{r}
-all_proceedings <- rbind(findings_df, main_df)
-all_proceedings
 ```
