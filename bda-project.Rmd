@@ -103,17 +103,19 @@ list.files()
 ```{r}
 findings_df <- read.csv("findings.tsv_type.csv")
 findings_df$journal = "findings"
-findings_df
+head(findings_df)
 
 main_df <- read.csv("main.tsv_type.csv")
 main_df$journal = "main"
-main_df
+head(main_df)
+```
 
+```{r}
 dim(main_df)
 dim(findings_df)
-
 data <- rbind(main_df, findings_df)
 ```
+
 ```{r}
 # processed data
 sample_size <- min(dim(main_df)[1], dim(findings_df)[1])
