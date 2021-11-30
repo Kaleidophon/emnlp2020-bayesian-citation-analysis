@@ -42,42 +42,32 @@ $$
 Because we suspect that longer papers receive more citations on average (since they have more content, often receive posters and spotlight talks etc.), we now modify the likelihood for the first feature in the following way:
 
 $$ 
-y_i^{(1)} \sim \text{Poisson}(\lambda\exp(\rho))\\
+y_i^{(1)} \sim \text{Poisson}(\lambda\exp(y_i^{(2)}))\\
 $$
 Thus, being a long paper makes a higher number of citations become more likely.
 This leads us to the following likelihood and posterior for a single sample:
 
 $$
-  p(y_i|\lambda, \rho) = p(y_i^{(1)}|\lambda)p(y_i^{(2)}|\rho)\\
+  p(y_i|\lambda, \rho) = p(y_i^{(1)}|\lambda, y_i^{(2)})p(y_i^{(2)}|\rho)\\
 $$
 
 Further, we can formulate the following posterior for the entire Dataset $\mathbb{D} = \{y_1, \ldots, y_N\}$:
 $$
-  p(\lambda, \rho|\mathbb{D}, \theta) \propto \prod_{i=1}^N p(y_i^{(1)}|\lambda)p(\lambda|\alpha_\lambda, \beta_\lambda)p(y_i^{(2)}|\rho)p(\rho|\alpha_\rho, \beta_\rho)
+  p(\lambda|\rho, \mathbb{D}, \theta) \propto \prod_{i=1}^N p(y_i^{(1)}|\lambda, y_i^{(2)})p(\lambda|\alpha_\lambda, \beta_\lambda)p(y_i^{(2)}|\rho)p(\rho|\alpha_\rho, \beta_\rho)
 $$
-where we summarize all hyperparameters as $\theta = [\alpha_\lambda, \beta_\lambda, \alpha_\rho, \beta_\rho]$ to avoid clutter. As we see in the the next section, we would actually like to reason about the posterior $p(\lambda, |\mathbb{D}, \theta)$. 
-We could do that for instance by integration:
-
-$$
-  p(\lambda|\mathbb{D}, \theta) = \int p(\lambda, \rho|\mathbb{D}, \theta) d\rho
-$$
+where we summarize all prior parameters as $\theta = [\alpha_\lambda, \beta_\lambda, \alpha_\rho, \beta_\rho]$ to avoid clutter. As we see in the the next section, we would actually like to reason about the posterior $p(\lambda, |\mathbb{D}, \theta)$. 
 
 [//]: # "Since we chose conjugate prior for the two feature likelihoods and assumed the features to be independent, we know that the posterior $p(\lambda, \rho|\mathbb{D})$ is a product of a Beta with posterior parameters $\alpha_\rho + \sum_{i=1}^N y^{(2)}_i, \beta_\rho + N - \sum_{i=1}^N y^{(2)}_i$ and a Gamma with posterior parameters $\alpha_\lambda + \sum_{i=1}^N y^{(1)}_i, \beta_\lambda + N$ (see for instance [Wikipedia](https://en.wikipedia.org/wiki/Conjugate_prior) for this standard result)."
 
-We avoid analytical integration of this expression and instead evaluate the integral using $M$ Monte Carlo samples from the Binomial posterior. We can do this either using samples that were collected using MCMC, or sampling from the Beta posterior directly, since we know its parameters via conjugacy, namely $\alpha_\rho + \sum_{i=1}^N y^{(2)}_i, \beta_\rho + N - \sum_{i=1}^N y^{(2)}_i$:
-
-$$
-  p(\lambda|\mathbb{D}, \theta) = \int p(\lambda, \rho|\mathbb{D}, \theta) d\rho \approx \frac{1}{M}\sum_{j=1}^M p(\lambda, \rho_j|\mathbb{D}, \theta);\quad \rho_j \sim p(\rho|\mathbb{D}, \alpha_\rho, \beta_\rho)
-$$
 # Research question
 
 We are interested in finding out whether publishing at the main conference or finding has an impact on one's citations. 
-For this purpose, we would like to compare the posterior distributions $p(\lambda_m|\rho_m, \mathbb{D}_m) \stackrel{?}{=} p(\lambda_f|\rho_f, \mathbb{D}_f)$. 
+For this purpose, we would like to compare the posterior distributions $p(\lambda_m|\rho_m, \mathbb{D}_m, \theta_m) \stackrel{?}{=} p(\lambda_f|\rho_f, \mathbb{D}_f, \theta_f)$. 
 Since $\lambda_m, \lambda_f$ can in this context be interpreted as the mean citation rates for both venues, comparing their respective posterior distributions allows us to answer this question given the data and taking uncertainty into account.
 
 # Using a hierarchical model
 
-We can choose to model the distributions of interest - $p(\lambda_m|\rho_m, \mathbb{D}_m)$ and $p(\lambda_f|\rho_f, \mathbb{D}_f)$ - each with their separate priors. However, we also consider a shared hyperprior for the respective $\lambda$ and $\rho$ parameters. Intuitively, this implies that we either assume our prior belief about the citation rate of papers at both venues to be the same OR the range of probabilities to be a long or short paper at both venues to be similar. The generative stories of such hierarchical models is given below. 
+We can choose to model the distributions of interest - $p(\lambda_m|\rho_m, \mathbb{D}_m, \theta_m)$ and $p(\lambda_f|\rho_f, \mathbb{D}_f, \theta_f)$ - each with their separate priors. However, we also consider a shared hyperprior for the respective $\lambda$ and $\rho$ parameters. Intuitively, this implies that we either assume our prior belief about the citation rate of papers at both venues to be the same OR the range of probabilities to be a long or short paper at both venues to be similar. The generative stories of such hierarchical models is given below. 
 
 Shared hyperprior for $\lambda$:
 $$
@@ -92,6 +82,7 @@ $$
 \lambda_f \sim \Gamma(\alpha_f, \beta_f)\\
 \rho_m, \rho_f \sim \text{B}(\alpha_0, \beta_0)\\
 $$
+
 
 # R and Stan Code
 
