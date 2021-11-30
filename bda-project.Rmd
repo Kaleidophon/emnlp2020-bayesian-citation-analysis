@@ -39,7 +39,13 @@ $$
 y_i^{(2)} \sim \text{Bernoulli}(\rho) \\
 \rho \sim \text{B}(\alpha_\rho, \beta_\rho)
 $$
-This leads us to the following likelihood and posterior for a single sample (TODO: Here we might want to introduce a dependency between paper length and citations):
+Because we suspect that longer papers receive more citations on average (since they have more content, often receive posters and spotlight talks etc.), we now modify the likelihood for the first feature in the following way:
+
+$$ 
+y_i^{(1)} \sim \text{Poisson}(\lambda\exp(\rho))\\
+$$
+Thus, being a long paper makes a higher number of citations become more likely.
+This leads us to the following likelihood and posterior for a single sample:
 
 $$
   p(y_i|\lambda, \rho) = p(y_i^{(1)}|\lambda)p(y_i^{(2)}|\rho)\\
@@ -49,7 +55,7 @@ Further, we can formulate the following posterior for the entire Dataset $\mathb
 $$
   p(\lambda, \rho|\mathbb{D}, \theta) \propto \prod_{i=1}^N p(y_i^{(1)}|\lambda)p(\lambda|\alpha_\lambda, \beta_\lambda)p(y_i^{(2)}|\rho)p(\rho|\alpha_\rho, \beta_\rho)
 $$
-where we summarize all hyperparameters as $\theta = [\alpha_\lambda, \beta_\lambda, \alpha_\rho, \beta_\rho]$ to avoid clutter. As we see in the the next section, we would actually like to reason about the posterior $p(\lambda, \rho|\mathbb{D})$. 
+where we summarize all hyperparameters as $\theta = [\alpha_\lambda, \beta_\lambda, \alpha_\rho, \beta_\rho]$ to avoid clutter. As we see in the the next section, we would actually like to reason about the posterior $p(\lambda, |\mathbb{D}, \theta)$. 
 We could do that for instance by integration:
 
 $$
