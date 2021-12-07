@@ -30,19 +30,19 @@ For each venue, have $N$ total observations, with two features $y_i^{(1)}$ and $
 The first one denotes the number of citations, which we model using a Poisson distribution and a Gamma prior:
 
 $$ 
-y_i^{(1)} \sim \text{Poisson}(\lambda)\\
-\lambda \sim \Gamma(\alpha_\lambda, \beta_\lambda)
+  y_i^{(1)} \sim \text{Poisson}(\lambda)\\
+  \lambda \sim \Gamma(\alpha_\lambda, \beta_\lambda)
 $$
 The second one described whether paper is a short or a long paper, which we model using a Bernoulli with a Beta prior:
 
 $$
-y_i^{(2)} \sim \text{Bernoulli}(\rho) \\
-\rho \sim \text{B}(\alpha_\rho, \beta_\rho)
+  y_i^{(2)} \sim \text{Bernoulli}(\rho) \\
+  \rho \sim \text{B}(\alpha_\rho, \beta_\rho)
 $$
 Because we suspect that longer papers receive more citations on average (since they have more content, often receive posters and spotlight talks etc.), we now modify the likelihood for the first feature in the following way:
 
 $$ 
-y_i^{(1)} \sim \text{Poisson}(\lambda\exp(y_i^{(2)}))\\
+  y_i^{(1)} \sim \text{Poisson}(\lambda\exp(y_i^{(2)}))\\
 $$
 Thus, being a long paper makes a higher number of citations become more likely.
 This leads us to the following likelihood and posterior for a single sample:
@@ -71,16 +71,17 @@ We can choose to model the distributions of interest - $p(\lambda_m|\rho_m, \mat
 
 Shared hyperprior for $\lambda$:
 $$
-\lambda_m, \lambda_f \sim \Gamma(\alpha_0, \beta_0)\\
-\rho_m \sim \text{B}(\alpha_{\rho_m}, \beta_{\rho_m})\\
-\rho_f \sim \text{B}(\alpha_{\rho_f}, \beta_{\rho_f})\\
+  \lambda_m, \lambda_f \sim \Gamma(\alpha_0, \beta_0)\\
+  \rho_m \sim \text{B}(\alpha_{\rho_m}, \beta_{\rho_m})\\
+  \rho_f \sim \text{B}(\alpha_{\rho_f}, \beta_{\rho_f})\\
 $$
+
 Shared hyperprior for $\rho$:
 
 $$
-\lambda_m \sim \Gamma(\alpha_m, \beta_m)\\
-\lambda_f \sim \Gamma(\alpha_f, \beta_f)\\
-\rho_m, \rho_f \sim \text{B}(\alpha_0, \beta_0)\\
+  \lambda_m \sim \Gamma(\alpha_m, \beta_m)\\
+  \lambda_f \sim \Gamma(\alpha_f, \beta_f)\\
+  \rho_m, \rho_f \sim \text{B}(\alpha_0, \beta_0)\\
 $$
 
 
