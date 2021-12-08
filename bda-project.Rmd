@@ -25,7 +25,7 @@ rstan_options(auto_write = TRUE)
 In the following, we describe the model used for our experiments. 
 We posses a dataset of papers from two EMNLP 2020 venues: Main conference and findings,
 which are indicated when necessary with indices $m$ and $f$, respectively (where possible, we omit these for readability). 
-For each venue, have $N$ total observations, with two features $y_i^{(1)}$ and $y_i^{(2)}$ each.
+For each venue, we have $M$ and $N$ total observations, with two features $y_i^{(1)}$ and $y_i^{(2)}$ each.
 
 The first one denotes the number of citations, which we model using a Poisson distribution and a Gamma prior:
 
@@ -33,6 +33,7 @@ $$
   y_i^{(1)} \sim \text{Poisson}(\lambda)\\
   \lambda \sim \Gamma(\alpha_\lambda, \beta_\lambda)
 $$
+
 The second one described whether paper is a short or a long paper, which we model using a Bernoulli with a Beta prior:
 
 $$
@@ -44,6 +45,7 @@ Because we suspect that longer papers receive more citations on average (since t
 $$ 
   y_i^{(1)} \sim \text{Poisson}(\lambda\exp(y_i^{(2)}))\\
 $$
+
 Thus, being a long paper makes a higher number of citations become more likely.
 This leads us to the following likelihood and posterior for a single sample:
 
@@ -55,6 +57,7 @@ Further, we can formulate the following posterior for the entire Dataset $\mathb
 $$
   p(\lambda|\rho, \mathbb{D}, \theta) \propto \prod_{i=1}^N p(y_i^{(1)}|\lambda, y_i^{(2)})p(\lambda|\alpha_\lambda, \beta_\lambda)p(y_i^{(2)}|\rho)p(\rho|\alpha_\rho, \beta_\rho)
 $$
+
 where we summarize all prior parameters as $\theta = [\alpha_\lambda, \beta_\lambda, \alpha_\rho, \beta_\rho]$ to avoid clutter. As we see in the the next section, we would actually like to reason about the posterior $p(\lambda, |\mathbb{D}, \theta)$. 
 
 [//]: # "Since we chose conjugate prior for the two feature likelihoods and assumed the features to be independent, we know that the posterior $p(\lambda, \rho|\mathbb{D})$ is a product of a Beta with posterior parameters $\alpha_\rho + \sum_{i=1}^N y^{(2)}_i, \beta_\rho + N - \sum_{i=1}^N y^{(2)}_i$ and a Gamma with posterior parameters $\alpha_\lambda + \sum_{i=1}^N y^{(1)}_i, \beta_\lambda + N$ (see for instance [Wikipedia](https://en.wikipedia.org/wiki/Conjugate_prior) for this standard result)."
@@ -106,34 +109,132 @@ head(main_df)
 dim(main_df)
 dim(findings_df)
 data <- rbind(main_df, findings_df)
+
+ggplot(data, aes(Citation, color=journal, fill=journal)) +
+  geom_density(alpha=0.2) +
+  coord_cartesian(xlim=c(0, 50))
+
 ```
+## Closed form solutions to the basic model
+
+$$
+  y_i \sim Poisson(\lambda) \\
+  \lambda \sim \Gamma(\alpha, \beta)\\
+
+  \lambda | Y \sim \Gamma(\alpha + \sum^n_{i=0}y_i, \beta + n)
+$$
+
+```{r}
+
+
+sample_closed_draws <- function(samples, n_draws, alpha = 0.001, beta = 0.001) {
+  y_hat <- mean(samples)
+  n <- length(samples)
+  closed_draws <- rgamma(n_draws, alpha + sum(samples), beta + n)  
+  return(data.frame(lambda=closed_draws))
+}
+close_main_draws <- sample_closed_draws(main_df$Citation, 4000)
+close_main_draws$venue <- "main"
+close_find_draws <- sample_closed_draws(findings_df$Citation, 4000)
+close_find_draws$venue <- "findings"
+
+plotting_data <- rbind(close_main_draws, close_find_draws)
+ggplot(plotting_data, aes(lambda, color=venue, fill=venue)) +
+  geom_histogram(bins=100, alpha=.5) +
+  theme(legend.position="top") +
+  geom_vline(aes(xintercept=mean(close_main_draws$lambda)), linetype="dashed", size=.5) + 
+  geom_vline(aes(xintercept=mean(close_find_draws$lambda)), linetype="dashed", size=.5)
+```
+
+investigate diff and the "probability" of there being overlap between the predictive posterior distribution
+```{r}
+main_prediction_posterior <- sapply(close_main_draws$lambda, function(lambda) rpois(1, lambda))
+findings_prediction_posterior <- sapply(close_find_draws$lambda, function(lambda) rpois(1, lambda))
+transformed_dist <- main_prediction_posterior - findings_prediction_posterior
+predicted_mean <- mean(transformed_dist)
+```
+
+```{r}
+a <- data.frame(lambda=main_prediction_posterior)
+a$venue = "main"
+b <- data.frame(lambda=findings_prediction_posterior)
+b$venue = "findings"
+
+ggplot(rbind(a,b), aes(lambda, color=venue, fill=venue)) +
+  geom_density(alpha=.5) +
+  labs(title="predictive posterior draws", x=TeX("\\tilde{y}"), y="")
+```
+
+
+```{r}
+ggplot(data.frame(y_hat = transformed_dist), aes(y_hat)) +
+  geom_histogram(bins=35, color="black", fill="lightblue", alpha=.6) + 
+  geom_vline(aes(xintercept=mean(predicted_mean)), linetype="dashed", size=.5) +
+  labs(title="", x=TeX("\\tilde{y}_m - \\tilde{y}_f"), y="") +
+  annotate("text", x=10, y=250, label= paste("mean =", round(predicted_mean, 2)))
+P <- ecdf(transformed_dist)
+eps <- 1
+P(0+eps)-P(0-eps)
+```
+
+$$
+P(|y_m - y_f| \leq 1) = 0.16
+$$
 
 ```{r}
 # processed data
-sample_size <- min(dim(main_df)[1], dim(findings_df)[1])
-main_citations <- sample(main_df$Citation, size = sample_size)
-findings_citations <- sample(findings_df$Citation, size = sample_size)
-processed_data <- cbind(main_citations, findings_citations)
+sizes <- c(nrow(main_df), nrow(findings_df))
+data <- rbind(main_df, findings_df)$Citation
+sizes
+# data
 ```
 
 
 ```{r}
-model_data <- list(N = nrow(processed_data),
-                   J = ncol(processed_data),
-                   y = processed_data)
+model_data <- list(N = length(data),
+                   sizes = sizes,
+                   J = 2,
+                   y = data)
 
 fit <- stan(file = "model.stan", 
             data = model_data,
-            chains = 2,
+            chains = 4,
             iter = 2000,
             warmup = 1000)
 ```
 
+
+
 ```{r}
 draws <- as.data.frame(fit)
-draws
-ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
-ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
+main_draws <- data.frame(name=draws$`lambda[1]`)
+main_draws$label <- "main"
+finding_draws <- data.frame(name=draws$`lambda[2]`)
+finding_draws$label <- "findings"
+
+master_tmp <- rbind(main_draws, finding_draws)
+p <- ggplot(master_tmp, aes(name, color=label, fill=label)) +
+  geom_histogram(bins=100, alpha=1) +
+  geom_vline(aes(xintercept=mean(draws$`lambda[1]`)), linetype="dashed", size=.5) + 
+  geom_vline(aes(xintercept=mean(draws$`lambda[2]`)), linetype="dashed", size=.5)
+p
+```
+
+
+
+```{r}
+diff_distribution <- data.frame(lambda_diff = draws$`ypred[1]` - draws$`ypred[2]`)
+p <- ggplot(diff_distribution, aes(lambda_diff)) +
+    geom_density(alpha=1, color="lightblue", fill="lightblue") 
+    geom_vline(aes(xintercept=mean(lambda_diff)), linetype="dashed", size=.5) +
+    labs(title="Density plot over the difference between lambdas", x = "main - findings")
+p
+```
+
+```{r}
+P <- ecdf(diff_distribution$lambda_diff)
+eps <- 1
+P(0+eps)-P(0-eps)
 ```
 
 
