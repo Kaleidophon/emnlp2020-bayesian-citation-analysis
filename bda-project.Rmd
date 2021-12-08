@@ -113,7 +113,27 @@ data <- rbind(main_df, findings_df)
 ggplot(data, aes(Citation, color=journal, fill=journal)) +
   geom_density(alpha=0.2) +
   coord_cartesian(xlim=c(0, 50))
+```
 
+# Analyze the distribution of citations across long / short papers
+
+```{r}
+long_papers = subset(data, type == "long")[, "Citation"]
+short_papers = subset(data, type == "short")[, "Citation"]
+
+median(short_papers)
+mean(short_papers)
+median(long_papers)
+mean(long_papers)
+
+#sampled_long_papers = sample(long_papers, size=length(short_papers))
+hist_long = density(long_papers)
+hist_short = density(short_papers)
+plot(hist_long, col=rgb(0,0,1,1/4), xlim=c(0,30), ylim=c(0, 0.12), main="Citations by paper length", xlab="Number of citations")  # first histogram
+polygon(hist_long, col=rgb(0,0,1,1/4), border=rgb(0,0,1,1/4)) 
+lines(hist_short, col=rgb(1,0,0,1/4), xlim=c(0,30))  # second
+polygon(hist_short, col=rgb(1,0,0,1/4), border=rgb(1,0,0,1/4)) 
+legend("topright", legend=c("Long Papers", "Short Papers"), col=c(rgb(0,0,1,1/4), rgb(1,0,0,1/4)), lty=1:1, cex=0.8)
 ```
 ## Closed form solutions to the basic model
 
@@ -181,6 +201,8 @@ $$
 P(|y_m - y_f| \leq 1) = 0.16
 $$
 
+# Creating the model
+
 ```{r}
 # processed data
 sizes <- c(nrow(main_df), nrow(findings_df))
@@ -207,6 +229,7 @@ fit <- stan(file = "model.stan",
 
 ```{r}
 draws <- as.data.frame(fit)
+<<<<<<< HEAD
 main_draws <- data.frame(name=draws$`lambda[1]`)
 main_draws$label <- "main"
 finding_draws <- data.frame(name=draws$`lambda[2]`)
@@ -235,6 +258,13 @@ p
 P <- ecdf(diff_distribution$lambda_diff)
 eps <- 1
 P(0+eps)-P(0-eps)
+=======
+draws
+ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
+ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
+ggplot(draws, aes(`ypred[1]`)) + geom_histogram(bins=15)
+ggplot(draws, aes(`ypred[2]`)) + geom_histogram(bins=15)
+>>>>>>> c156f618365395aaa13bef7d851a3afc5f7e0832
 ```
 
 

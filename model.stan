@@ -20,10 +20,5 @@ model {
 }
 
 generated quantities {
-  // predictive distribution for machine six
-  int ypred[J];
-  for(j in 1:J){
-    ypred[j] = poisson_rng(lambda[j]);
-  }
+  int ypred[J] = poisson_rng(lambda);
 }
-
