@@ -13,3 +13,7 @@ model {
     y[, j] ~ poisson(lambda[j]);
   }
 }
+
+generated quantities {
+  int ypred[J] = poisson_rng(lambda);
+}

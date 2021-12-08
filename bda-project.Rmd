@@ -101,12 +101,35 @@ main_df <- read.csv("main.tsv_type.csv")
 main_df$journal = "main"
 head(main_df)
 ```
-
 ```{r}
 dim(main_df)
 dim(findings_df)
 data <- rbind(main_df, findings_df)
+data
 ```
+
+# Analyze the distribution of citations across long / short papers
+
+```{r}
+long_papers = subset(data, type == "long")[, "Citation"]
+short_papers = subset(data, type == "short")[, "Citation"]
+
+median(short_papers)
+mean(short_papers)
+median(long_papers)
+mean(long_papers)
+
+#sampled_long_papers = sample(long_papers, size=length(short_papers))
+hist_long = density(long_papers)
+hist_short = density(short_papers)
+plot(hist_long, col=rgb(0,0,1,1/4), xlim=c(0,30), ylim=c(0, 0.12), main="Citations by paper length", xlab="Number of citations")  # first histogram
+polygon(hist_long, col=rgb(0,0,1,1/4), border=rgb(0,0,1,1/4)) 
+lines(hist_short, col=rgb(1,0,0,1/4), xlim=c(0,30))  # second
+polygon(hist_short, col=rgb(1,0,0,1/4), border=rgb(1,0,0,1/4)) 
+legend("topright", legend=c("Long Papers", "Short Papers"), col=c(rgb(0,0,1,1/4), rgb(1,0,0,1/4)), lty=1:1, cex=0.8)
+```
+
+# Creating the model
 
 ```{r}
 # processed data
@@ -134,6 +157,8 @@ draws <- as.data.frame(fit)
 draws
 ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
 ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
+ggplot(draws, aes(`ypred[1]`)) + geom_histogram(bins=15)
+ggplot(draws, aes(`ypred[2]`)) + geom_histogram(bins=15)
 ```
 
 
