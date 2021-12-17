@@ -282,7 +282,35 @@ fit <- stan(file = "model.stan",
 
 ```{r}
 draws <- as.data.frame(fit)
-apply(array, margin, ...)
+a_predictive_posterior_draws = c()
+for(i in 1:nrow(draws)){
+    res <- (draws[i, 5] * rpois(1, draws[i, 1])) + ((1-draws[i, 5]) * rpois(1, draws[i, 2]))
+    a_predictive_posterior_draws <- append(a_predictive_posterior_draws, res)
+}
+
+b_predictive_posterior_draws = c()
+for(i in 1:nrow(draws)){
+    res <- (draws[i, 5] * rpois(1, draws[i, 3])) + ((1-draws[i, 5]) * rpois(1, draws[i, 4]))
+    b_predictive_posterior_draws <- append(b_predictive_posterior_draws, res)
+}
+
+data <- rbind(main_df, findings_df)
+
+a_tmp_df <- data.frame(Citation=a_predictive_posterior_draws)
+a_tmp_df$Journal = "predictive_a"
+
+b_tmp_df <- data.frame(Citation=b_predictive_posterior_draws)
+b_tmp_df$Journal = "predictive_b"
+
+tmp = data.frame(Citation=data$Citation, Journal=data$journal)
+tmp = rbind(tmp, a_tmp_df)
+tmp = rbind(tmp, b_tmp_df)
+
+
+ggplot(tmp, aes(Citation, color=Journal, fill=Journal)) +
+  geom_density(alpha=0.2) +
+  coord_cartesian(xlim=c(0, 50))
+
 ```
 
 
