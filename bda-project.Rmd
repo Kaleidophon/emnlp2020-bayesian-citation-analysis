@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(aaltobda)
 library(rstan)
 library(loo)
+library(latex2exp)
 rstan_options (javascript = FALSE)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -148,7 +149,6 @@ $$
 
 
 sample_closed_draws <- function(samples, n_draws, alpha = 0.001, beta = 0.001) {
-  y_hat <- mean(samples)
   n <- length(samples)
   closed_draws <- rgamma(n_draws, alpha + sum(samples), beta + n)  
   return(data.frame(lambda=closed_draws))
@@ -184,6 +184,37 @@ ggplot(rbind(a,b), aes(lambda, color=venue, fill=venue)) +
   geom_density(alpha=.5) +
   labs(title="predictive posterior draws", x=TeX("\\tilde{y}"), y="")
 ```
+```{r}
+data <- rbind(main_df, findings_df)
+
+truncate <- function(data_df, p, name, n_samples = 4000) {
+  mask <- data_df$Citation < quantile(data_df$Citation, p)
+  truncated_data_df <- data_df[mask, ]
+  
+  lambda_draws <- sample_closed_draws(truncated_data_df$Citation, n_samples)
+  predictive_draws <- sapply(lambda_draws$lambda, function(lambda) rpois(1, lambda))
+  ys <- data.frame(Citation=predictive_draws)
+  ys$Journal <- name
+  
+  return(ys)
+}
+
+threshold <- .75
+tmp_main_df <- truncate(main_df, threshold, "predictive_main(truncated)")
+tmp_find_df <- truncate(findings_df, threshold, "predictive_findings(truncated)")
+tmp_df <- rbind(tmp_main_df, tmp_find_df)
+
+tmp = data.frame(Citation=data$Citation, Journal=data$journal)
+tmp = rbind(tmp, tmp_df)
+
+ggplot(tmp, aes(Citation, color=Journal, fill=Journal)) +
+  geom_density(alpha=0.2) +
+  coord_cartesian(xlim=c(0, 50))
+
+
+```
+
+
 
 
 ```{r}
@@ -211,6 +242,28 @@ sizes
 # data
 ```
 
+```{r}
+get_weakly_informative_gamma = function(samples) {
+  alpha_est = mean(samples)^2 / (max(samples) - min(samples));
+  beta_est = alpha_est / mean(samples);
+  
+  return(c(alpha_est, beta_est));
+}
+
+get_weakly_informative_normal = function(samples_short, samples_long) {
+  lower = min(min(samples_short + 1) / min(samples_long + 1), min(samples_long + 1) / min(samples_short + 1)) - 1
+  upper = max(max(samples_short) / max(samples_long), max(samples_long) / max(samples_short))
+  mu = (lower + upper) / 2
+  sigma = (upper - mu) / 2.576
+  
+  return(c(mu, sigma));
+}
+
+
+get_weakly_informative_gamma(main_df$Citation)
+```
+
+
 
 ```{r}
 model_data <- list(N = length(data),
@@ -229,49 +282,8 @@ fit <- stan(file = "model.stan",
 
 ```{r}
 draws <- as.data.frame(fit)
-<<<<<<< HEAD
-main_draws <- data.frame(name=draws$`lambda[1]`)
-main_draws$label <- "main"
-finding_draws <- data.frame(name=draws$`lambda[2]`)
-finding_draws$label <- "findings"
-
-master_tmp <- rbind(main_draws, finding_draws)
-p <- ggplot(master_tmp, aes(name, color=label, fill=label)) +
-  geom_histogram(bins=100, alpha=1) +
-  geom_vline(aes(xintercept=mean(draws$`lambda[1]`)), linetype="dashed", size=.5) + 
-  geom_vline(aes(xintercept=mean(draws$`lambda[2]`)), linetype="dashed", size=.5)
-p
+apply(array, margin, ...)
 ```
 
 
 
-```{r}
-diff_distribution <- data.frame(lambda_diff = draws$`ypred[1]` - draws$`ypred[2]`)
-p <- ggplot(diff_distribution, aes(lambda_diff)) +
-    geom_density(alpha=1, color="lightblue", fill="lightblue") 
-    geom_vline(aes(xintercept=mean(lambda_diff)), linetype="dashed", size=.5) +
-    labs(title="Density plot over the difference between lambdas", x = "main - findings")
-p
-```
-
-```{r}
-P <- ecdf(diff_distribution$lambda_diff)
-eps <- 1
-P(0+eps)-P(0-eps)
-=======
-draws
-ggplot(draws, aes(`lambda[1]`)) + geom_histogram(bins=30)
-ggplot(draws, aes(`lambda[2]`)) + geom_histogram(bins=30)
-ggplot(draws, aes(`ypred[1]`)) + geom_histogram(bins=15)
-ggplot(draws, aes(`ypred[2]`)) + geom_histogram(bins=15)
->>>>>>> c156f618365395aaa13bef7d851a3afc5f7e0832
-```
-
-
-```{r}
-findings_citations <- sample(findings_df$Citation, size = 447, replace = T)
-main_citations <- sample(main_df$Citation, size = 447, replace = T)
-
-citation_pairs <- cbind(main_citations, findings_citations)
-colMeans(citation_pairs)
-```
