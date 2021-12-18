@@ -16,6 +16,7 @@ library(aaltobda)
 library(rstan)
 library(loo)
 library(latex2exp)
+library(bayesplot)
 rstan_options (javascript = FALSE)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -31,7 +32,7 @@ For each venue, we have $M$ and $N$ total observations, with two features $y_i^{
 The first one denotes the number of citations, which we model using a Poisson distribution and a Gamma prior:
 
 $$ 
-  y_i^{(1)} \sim \text{Poisson}(\lambda)\\
+  y_i^{(1)} \sim \text{Poisson}(\lambda)\\    
   \lambda \sim \Gamma(\alpha_\lambda, \beta_\lambda)
 $$
 
@@ -271,7 +272,7 @@ model_data <- list(N = length(data),
                    J = 2,
                    y = data)
 
-fit <- stan(file = "model.stan", 
+fit <- stan(file = "model_mixture.stan", 
             data = model_data,
             chains = 4,
             iter = 2000,
@@ -286,4 +287,21 @@ apply(array, margin, ...)
 ```
 
 
+## posterior predictive draws
+
+```{r}
+draws <- as.data.frame(fit)
+yrep <- extract(fit, permuted=FALSE)
+dimnames(yrep)
+
+y_main <- main_df$Citation
+y_findings <- findings_df$Citation
+yrep_main <- matrix(yrep[,,3], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,4], nrow=4, ncol=length(y_findings))
+
+print(length(y_main))
+color_scheme_set("viridis")
+ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text() + theme(text = element_text(size = 16, family="sans"))     
+ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
+```
 
