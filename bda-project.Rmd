@@ -252,13 +252,15 @@ get_weakly_informative_gamma = function(samples) {
 }
 
 get_weakly_informative_normal = function(samples_short, samples_long) {
-  lower = min(min(samples_short + 1) / min(samples_long + 1), min(samples_long + 1) / min(samples_short + 1)) - 1
-  upper = max(max(samples_short) / max(samples_long), max(samples_long) / max(samples_short))
-  mu = (lower + upper) / 2
+  eps = 1e-12
+  lower = min(min(samples_short + eps) / max(samples_long), min(samples_long + eps) / max(samples_short))
+  upper = max(samples_long) / mean(samples_short)
+  mu = mean(samples_long) / mean(samples_short)
   sigma = (upper - mu) / 2.576
   
   return(c(mu, sigma));
 }
+
 
 
 get_weakly_informative_gamma(main_df$Citation)
