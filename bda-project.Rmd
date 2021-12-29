@@ -12,6 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+install.packages('bayesplot')
+```
+
+```{r}
 library(aaltobda)
 library(rstan)
 library(loo)
@@ -199,22 +203,37 @@ get_weakly_informative_gamma(main_df$Citation)
 get_weakly_informative_gamma(findings_df$Citation)
 ```
 
-
-
 ```{r}
-model_data <- list(N = length(data),
+# ####### Simple model #######
+simple_model_data <- list(N = length(data),
                    sizes = sizes,
                    J = 2,
-                   y = data,
-                   K = 3,
-                   alpha=c(4, 1, 1))
+                   y = data)
 
-fit <- stan(file = "model_mixture.stan", 
-            data = model_data,
+simple_fit <- stan(file = "model_simple.stan", 
+            data = simple_model_data,
             chains = 4,
             iter = 3000,
             warmup = 2000)
-fit
+simple_fit
+```
+
+
+```{r}
+# ####### Mixture model #######
+mixture_model_data <- list(N = length(data),
+                   sizes = sizes,
+                   J = 2,
+                   y = data,
+                   K = 2,
+                   alpha=c(10, 1))
+
+mixture_fit <- stan(file = "model_mixture.stan", 
+            data = mixture_model_data,
+            chains = 4,
+            iter = 5000,
+            warmup = 4000)
+mixture_fit
 ```
 
 
