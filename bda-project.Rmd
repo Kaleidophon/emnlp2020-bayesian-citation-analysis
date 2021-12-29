@@ -180,6 +180,20 @@ sizes
 ```
 
 ```{r}
+get_truncated_from <- function(data_df, p) {
+  mask <- data_df$Citation > quantile(data_df$Citation, p)
+  truncated_data_df <- data_df[mask, ]
+  
+  return(truncated_data_df)
+}
+
+get_truncated_to <- function(data_df, p) {
+  mask <- data_df$Citation < quantile(data_df$Citation, p)
+  truncated_data_df <- data_df[mask, ]
+  
+  return(truncated_data_df)
+}
+
 get_weakly_informative_gamma = function(samples) {
   alpha_est = mean(samples)^2 / (max(samples) - min(samples));
   beta_est = alpha_est / mean(samples);
@@ -201,6 +215,10 @@ get_weakly_informative_normal = function(samples_short, samples_long) {
 
 get_weakly_informative_gamma(main_df$Citation)
 get_weakly_informative_gamma(findings_df$Citation)
+get_weakly_informative_gamma(get_truncated_to(main_df, 0.2)$Citation)
+get_weakly_informative_gamma(get_truncated_from(main_df, 0.2)$Citation)
+get_weakly_informative_gamma(get_truncated_to(findings_df, 0.3)$Citation)
+get_weakly_informative_gamma(get_truncated_from(findings_df, 0.3)$Citation)
 ```
 
 ```{r}
@@ -226,13 +244,13 @@ mixture_model_data <- list(N = length(data),
                    J = 2,
                    y = data,
                    K = 2,
-                   alpha=c(10, 1))
+                   alpha=matrix(c(1000, 1, 20, 1), nrow=2, ncol=2))
 
 mixture_fit <- stan(file = "model_mixture.stan", 
             data = mixture_model_data,
             chains = 4,
-            iter = 5000,
-            warmup = 4000)
+            iter = 12000,
+            warmup = 10000)
 mixture_fit
 ```
 
