@@ -3,27 +3,42 @@ data {
   int<lower=0> J;
   int<lower=0> y[N];
   int sizes[J];
+  int<lower=2> K;  // Number of mixture components
+  vector[K] alpha[J];  // Dirichlet prior parameters
   
 }
 
 parameters {
-  matrix<lower=0>[J,2] lambda;
-  real<lower=0, upper=1> theta;
+  matrix<lower=0>[J,K] lambda; // Rate
+  simplex[K] theta[J];  // Mixture weights, one simplex per main / findings
 }
 
 model {
   int pos;
   pos = 1;
-  lambda[,1] ~ gamma(0.37925113, 0.03268506);
-  lambda[,2] ~ gamma(0.37925113, 0.03268506);
   
-  theta ~ beta(2, 2);
-
+  for (k in 1:K) {
+    // Common Gamma prior for every mixture component
+    if (k == 1) {
+      lambda[1,k] ~ gamma(0.3577605, 0.5981308); // Main
+      lambda[2,k] ~ gamma(0.2341311, 0.4838710); // Findings
+    }
+    else {
+      lambda[1,k] ~ gamma(0.60074470, 0.04131175); // Main
+      lambda[2,k] ~ gamma(0.59930843, 0.03945434); // Findings
+    }
+  }
+  
   for(j in 1:J) {
-    target += log_mix(theta,
-                      poisson_lpmf(segment(y, pos, sizes[j]) | lambda[j,1]),
-                      poisson_lpmf(segment(y, pos, sizes[j]) | lambda[j,2]));
+    theta[j] ~ dirichlet(alpha[j]); // Draw mixture components from dirichlet
     
+    for (y_n in segment(y, pos, sizes[j])) {
+      real mix_probs[K];  // Prob. of observation under current mix. dist.
+      for (k in 1:K) {
+         mix_probs[k] = log(theta[j,k]) + poisson_lpmf(y_n | lambda[j,k]);
+      }
+      target += log_sum_exp(mix_probs); // Log of sum of mix. probs.
+    }
     pos = pos + sizes[j];
   }
 }

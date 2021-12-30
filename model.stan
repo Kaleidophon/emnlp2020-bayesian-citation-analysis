@@ -15,7 +15,7 @@ model {
   int pos;
   pos = 1;
   lambda[,1] ~ gamma(0.37925113, 0.03268506);
-  lambda[,2] ~ gamma(0.37925113, 0.03268506);
+  lambda[,2] ~ gamma(0.21778377, 0.02369174);
   
   theta ~ beta(0.5, 0.5);
 
