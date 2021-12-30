@@ -215,10 +215,23 @@ get_weakly_informative_normal = function(samples_short, samples_long) {
 
 get_weakly_informative_gamma(main_df$Citation)
 get_weakly_informative_gamma(findings_df$Citation)
-get_weakly_informative_gamma(get_truncated_to(main_df, 0.2)$Citation)
-get_weakly_informative_gamma(get_truncated_from(main_df, 0.2)$Citation)
-get_weakly_informative_gamma(get_truncated_to(findings_df, 0.3)$Citation)
-get_weakly_informative_gamma(get_truncated_from(findings_df, 0.3)$Citation)
+#get_weakly_informative_gamma(get_truncated_to(main_df, 0.2)$Citation)
+#get_weakly_informative_gamma(get_truncated_from(main_df, 0.2)$Citation)
+#get_weakly_informative_gamma(get_truncated_to(findings_df, 0.3)$Citation)
+#get_weakly_informative_gamma(get_truncated_from(findings_df, 0.3)$Citation)
+
+# Get paper length as binary variable
+type_labels = c("short", "long")
+main_types = as.numeric(factor(main_df$type, levels=type_labels)) - 1
+findings_types = as.numeric(factor(findings_df$type, levels=type_labels)) - 1
+length(main_types)
+length(findings_types)
+data_types <- c(main_types, findings_types)
+length(data_types)
+
+# Get weakly-informative prior parameters for slope c
+get_weakly_informative_normal(subset(main_df, type == "short")[, "Citation"], subset(main_df, type == "long")[, "Citation"])
+get_weakly_informative_normal(subset(findings_df, type == "short")[, "Citation"], subset(findings_df, type == "long")[, "Citation"])
 ```
 
 ```{r}
@@ -243,17 +256,35 @@ mixture_model_data <- list(N = length(data),
                    sizes = sizes,
                    J = 2,
                    y = data,
-                   K = 2,
-                   rbind(c(1000, 1), c(20, 1)))
+                   K = 3,
+                   alpha=rbind(c(1000, 1, 1), c(2, 1, 1)))
 
 mixture_fit <- stan(file = "model_mixture.stan", 
             data = mixture_model_data,
             chains = 4,
-            iter = 12000,
-            warmup = 10000)
+            iter = 4000,
+            warmup = 3000)
 mixture_fit
 ```
+```{r}
+length(data)
+length(data_types)
 
+# ####### Citation model separate #######
+citation_model_sep_data <- list(N = length(data),
+                   sizes = sizes,
+                   J = 2,
+                   y1 = data,
+                   y2 = data_types)
+
+citation_sep_fit <- stan(file = "model_citation_separate.stan", 
+            data = citation_model_sep_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+
+citation_sep_fit
+```
 
 
 ```{r}
