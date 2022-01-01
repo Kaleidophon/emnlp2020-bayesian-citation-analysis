@@ -266,6 +266,7 @@ mixture_fit <- stan(file = "model_mixture.stan",
             warmup = 3000)
 mixture_fit
 ```
+
 ```{r}
 length(data)
 length(data_types)
@@ -293,11 +294,11 @@ apply(array, margin, ...)
 ```
 
 
-## posterior predictive draws
+## Posterior predictive draws simple model
 
 ```{r}
-draws <- as.data.frame(fit)
-yrep <- extract(fit, permuted=FALSE)
+draws <- as.data.frame(simple_fit)
+yrep <- extract(simple_fit, permuted=FALSE)
 dimnames(yrep)
 
 y_main <- main_df$Citation
@@ -311,3 +312,36 @@ ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text
 ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
 ```
 
+## Posterior predictive draws mixture model
+```{r}
+draws <- as.data.frame(mixture_fit)
+yrep <- extract(mixture_fit, permuted=FALSE)
+dimnames(yrep)
+
+y_main <- main_df$Citation
+y_findings <- findings_df$Citation
+yrep_main <- matrix(yrep[,,3], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,4], nrow=4, ncol=length(y_findings))
+
+print(length(y_main))
+color_scheme_set("viridis")
+ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text() + theme(text = element_text(size = 16, family="sans"))     
+ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
+```
+
+## Posterior predictive draws mixture model
+```{r}
+draws <- as.data.frame(citation_sep_fit)
+yrep <- extract(citation_sep_fit, permuted=FALSE)
+dimnames(yrep)
+
+y_main <- main_df$Citation
+y_findings <- findings_df$Citation
+yrep_main <- matrix(yrep[,,3], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,4], nrow=4, ncol=length(y_findings))
+
+print(length(y_main))
+color_scheme_set("viridis")
+ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text() + theme(text = element_text(size = 16, family="sans"))     
+ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
+```
