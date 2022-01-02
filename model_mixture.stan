@@ -44,12 +44,10 @@ model {
 }
 
 generated quantities {
-vector[J] log_lik;
-  for(j in 1:J) {
-      real mix_probs[K];  // Prob. of observation under current mix. dist.
-      for (k in 1:K) {
-         mix_probs[k] = log(theta[j,k]) + poisson_lpmf(y[k] | lambda[j,k]);
-      }
-      log_lik[j] = log_sum_exp(mix_probs);
+vector[J] ypred;
+for(j in 1:J) {
+    for (k in 1:K) {
+       ypred[j] = log(theta[j,k]) + poisson_rng(lambda[j,k]);
     }
+  }
 }
