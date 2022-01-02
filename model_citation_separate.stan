@@ -45,7 +45,12 @@ model {
   }
 }
 
-// TODO: Figure this out
-//generated quantities {
-//  int ypred[J] = poisson_rng(lambda);
-//}
+generated quantities {
+vector[J] ypred;
+  for(j in 1:J) {
+    for (n in 1:N) {
+      real new_lambda = lambda[j] + c[j] * bernoulli_rng(beta_rng(2, 2));
+      ypred[j] = poisson_rng(new_lambda);
+    }
+  }
+}
