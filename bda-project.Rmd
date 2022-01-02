@@ -320,8 +320,8 @@ dimnames(yrep)
 
 y_main <- main_df$Citation
 y_findings <- findings_df$Citation
-yrep_main <- matrix(yrep[,,3], nrow=4, ncol=length(y_main))
-yrep_findings <- matrix(yrep[,,4], nrow=4, ncol=length(y_findings))
+yrep_main <- matrix(yrep[,,13], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,14], nrow=4, ncol=length(y_findings))
 
 print(length(y_main))
 color_scheme_set("viridis")
@@ -329,7 +329,7 @@ ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text
 ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
 ```
 
-## Posterior predictive draws mixture model
+## Posterior predictive draws citations only model
 ```{r}
 draws <- as.data.frame(citation_sep_fit)
 yrep <- extract(citation_sep_fit, permuted=FALSE)
@@ -337,8 +337,8 @@ dimnames(yrep)
 
 y_main <- main_df$Citation
 y_findings <- findings_df$Citation
-yrep_main <- matrix(yrep[,,3], nrow=4, ncol=length(y_main))
-yrep_findings <- matrix(yrep[,,4], nrow=4, ncol=length(y_findings))
+yrep_main <- matrix(yrep[,,7], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,8], nrow=4, ncol=length(y_findings))
 
 print(length(y_main))
 color_scheme_set("viridis")
