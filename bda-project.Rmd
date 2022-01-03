@@ -215,6 +215,7 @@ get_weakly_informative_normal = function(samples_short, samples_long) {
 
 get_weakly_informative_gamma(main_df$Citation)
 get_weakly_informative_gamma(findings_df$Citation)
+get_weakly_informative_gamma(c(main_df$Citation, findings_df$Citation))
 #get_weakly_informative_gamma(get_truncated_to(main_df, 0.2)$Citation)
 #get_weakly_informative_gamma(get_truncated_from(main_df, 0.2)$Citation)
 #get_weakly_informative_gamma(get_truncated_to(findings_df, 0.3)$Citation)
@@ -232,6 +233,9 @@ length(data_types)
 # Get weakly-informative prior parameters for slope c
 get_weakly_informative_normal(subset(main_df, type == "short")[, "Citation"], subset(main_df, type == "long")[, "Citation"])
 get_weakly_informative_normal(subset(findings_df, type == "short")[, "Citation"], subset(findings_df, type == "long")[, "Citation"])
+all_short = c(subset(main_df, type == "short")[, "Citation"], subset(findings_df, type == "short")[, "Citation"])
+all_long = c(subset(main_df, type == "long")[, "Citation"], subset(findings_df, type == "long")[, "Citation"])
+get_weakly_informative_normal(all_short, all_long)
 ```
 
 ```{r}
@@ -241,12 +245,19 @@ simple_model_data <- list(N = length(data),
                    J = 2,
                    y = data)
 
-simple_fit <- stan(file = "model_simple.stan", 
+simple_weak_fit <- stan(file = "model_simple_weak.stan", 
             data = simple_model_data,
             chains = 4,
             iter = 3000,
             warmup = 2000)
-simple_fit
+simple_weak_fit
+
+simple_non_fit <- stan(file = "model_simple_non.stan", 
+            data = simple_model_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+simple_non_fit
 ```
 
 
@@ -268,10 +279,8 @@ mixture_fit
 ```
 
 ```{r}
-length(data)
-length(data_types)
 
-# ####### Citation model separate #######
+# ####### Citation / length model separate #######
 citation_model_sep_data <- list(N = length(data),
                    sizes = sizes,
                    J = 2,
@@ -286,6 +295,20 @@ citation_sep_fit <- stan(file = "model_citation_separate.stan",
 
 citation_sep_fit
 ```
+
+```{r}
+
+# ####### Citation / length model hierarchical #######
+
+citation_hierarchical_fit <- stan(file = "model_citation_hierarchical.stan", 
+            data = citation_model_sep_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+
+citation_hierarchical_fit
+```
+
 
 
 ```{r}
