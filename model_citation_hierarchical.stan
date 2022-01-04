@@ -17,13 +17,10 @@ model {
   int pos;
   pos = 1;
   
-  lambda[1] ~ gamma(0.37925113, 0.03268506); // Main 
-  lambda[2] ~ gamma(0.21778377, 0.02369174); // Findings
-  
-  // Set a lower limit for the slope parameter s.t. the rate parameter never 
-  // becomes negative.
-  c[1] ~ normal(1.778491, 18.216528) T[-lambda[1],]; // Main
-  c[2] ~ normal(1.72022, 24.08663) T[-lambda[2],]; // Findings
+  for (j in 1:J) {
+    lambda[j] ~ gamma(0.29527993, 0.02758679);
+    c[j] ~ normal(1.779526, 21.512018) T[-lambda[j],];
+  }
   
   for(j in 1:J) {
     rho[j] ~ beta(2,2);

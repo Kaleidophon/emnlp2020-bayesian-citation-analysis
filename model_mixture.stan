@@ -43,6 +43,11 @@ model {
   }
 }
 
-//generated quantities {
-//  int ypred[J] = (theta * poisson_rng(lambda[1])) + ((1-theta) * poisson_rng(lambda[1]));
-//}
+generated quantities {
+vector[J] ypred;
+for(j in 1:J) {
+    for (k in 1:K) {
+       ypred[j] = log(theta[j,k]) + poisson_rng(lambda[j,k]);
+    }
+  }
+}

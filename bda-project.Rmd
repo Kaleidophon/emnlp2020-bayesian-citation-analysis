@@ -215,6 +215,7 @@ get_weakly_informative_normal = function(samples_short, samples_long) {
 
 get_weakly_informative_gamma(main_df$Citation)
 get_weakly_informative_gamma(findings_df$Citation)
+get_weakly_informative_gamma(c(main_df$Citation, findings_df$Citation))
 #get_weakly_informative_gamma(get_truncated_to(main_df, 0.2)$Citation)
 #get_weakly_informative_gamma(get_truncated_from(main_df, 0.2)$Citation)
 #get_weakly_informative_gamma(get_truncated_to(findings_df, 0.3)$Citation)
@@ -232,6 +233,9 @@ length(data_types)
 # Get weakly-informative prior parameters for slope c
 get_weakly_informative_normal(subset(main_df, type == "short")[, "Citation"], subset(main_df, type == "long")[, "Citation"])
 get_weakly_informative_normal(subset(findings_df, type == "short")[, "Citation"], subset(findings_df, type == "long")[, "Citation"])
+all_short = c(subset(main_df, type == "short")[, "Citation"], subset(findings_df, type == "short")[, "Citation"])
+all_long = c(subset(main_df, type == "long")[, "Citation"], subset(findings_df, type == "long")[, "Citation"])
+get_weakly_informative_normal(all_short, all_long)
 ```
 
 ```{r}
@@ -241,12 +245,19 @@ simple_model_data <- list(N = length(data),
                    J = 2,
                    y = data)
 
-simple_fit <- stan(file = "model_simple.stan", 
+simple_weak_fit <- stan(file = "model_simple_weak.stan", 
             data = simple_model_data,
             chains = 4,
             iter = 3000,
             warmup = 2000)
-simple_fit
+simple_weak_fit
+
+simple_non_fit <- stan(file = "model_simple_non.stan", 
+            data = simple_model_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+simple_non_fit
 ```
 
 
@@ -266,11 +277,10 @@ mixture_fit <- stan(file = "model_mixture.stan",
             warmup = 3000)
 mixture_fit
 ```
-```{r}
-length(data)
-length(data_types)
 
-# ####### Citation model separate #######
+```{r}
+
+# ####### Citation / length model separate #######
 citation_model_sep_data <- list(N = length(data),
                    sizes = sizes,
                    J = 2,
@@ -285,6 +295,20 @@ citation_sep_fit <- stan(file = "model_citation_separate.stan",
 
 citation_sep_fit
 ```
+
+```{r}
+
+# ####### Citation / length model hierarchical #######
+
+citation_hierarchical_fit <- stan(file = "model_citation_hierarchical.stan", 
+            data = citation_model_sep_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+
+citation_hierarchical_fit
+```
+
 
 
 ```{r}
@@ -321,11 +345,11 @@ ggplot(tmp, aes(Citation, color=Journal, fill=Journal)) +
 ```
 
 
-## posterior predictive draws
+## Posterior predictive draws simple model
 
 ```{r}
-draws <- as.data.frame(fit)
-yrep <- extract(fit, permuted=FALSE)
+draws <- as.data.frame(simple_fit)
+yrep <- extract(simple_fit, permuted=FALSE)
 dimnames(yrep)
 
 y_main <- main_df$Citation
@@ -339,3 +363,36 @@ ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text
 ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
 ```
 
+## Posterior predictive draws mixture model
+```{r}
+draws <- as.data.frame(mixture_fit)
+yrep <- extract(mixture_fit, permuted=FALSE)
+dimnames(yrep)
+
+y_main <- main_df$Citation
+y_findings <- findings_df$Citation
+yrep_main <- matrix(yrep[,,13], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,14], nrow=4, ncol=length(y_findings))
+
+print(length(y_main))
+color_scheme_set("viridis")
+ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text() + theme(text = element_text(size = 16, family="sans"))     
+ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
+```
+
+## Posterior predictive draws citations only model
+```{r}
+draws <- as.data.frame(citation_sep_fit)
+yrep <- extract(citation_sep_fit, permuted=FALSE)
+dimnames(yrep)
+
+y_main <- main_df$Citation
+y_findings <- findings_df$Citation
+yrep_main <- matrix(yrep[,,7], nrow=4, ncol=length(y_main))
+yrep_findings <- matrix(yrep[,,8], nrow=4, ncol=length(y_findings))
+
+print(length(y_main))
+color_scheme_set("viridis")
+ppc_dens_overlay(y_main, yrep_main) + ggtitle('Main') + xlim(0,100) + yaxis_text() + theme(text = element_text(size = 16, family="sans"))     
+ppc_dens_overlay(y_findings, yrep_findings) + ggtitle('Findings') + xlim(0,100)  + yaxis_text() + theme(text = element_text(size = 16, family="sans"))   
+```
