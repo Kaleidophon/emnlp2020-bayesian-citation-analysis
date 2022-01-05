@@ -1,0 +1,172 @@
+---
+title: "project2"
+author: "anon"
+date: "1/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+library(aaltobda)
+library(rstan)
+library(loo)
+library(latex2exp)
+library(bayesplot)
+rstan_options (javascript = FALSE)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+findings_df <- read.csv("findings.tsv_type.csv")
+findings_df$journal = "findings"
+
+main_df <- read.csv("main.tsv_type.csv")
+main_df$journal = "main"
+
+
+df <- rbind(findings_df, main_df)
+head(df)
+```
+
+```{r}
+ggplot(df, aes(Citation, color=journal, fill=journal)) +
+  geom_density(alpha=0.2) +
+  coord_cartesian(xlim=c(0, 50))
+```
+
+
+# Citation-Only Model (closed form conjugate solution)
+
+```{r}
+sample_closed_draws <- function(samples, n_draws, alpha = 0.001, beta = 0.001) {
+  n <- length(samples)
+  closed_draws <- rgamma(n_draws, alpha + sum(samples), beta + n)  
+  return(data.frame(lambda=closed_draws))
+}
+close_main_draws <- sample_closed_draws(main_df$Citation, 4000)
+close_main_draws$venue <- "main"
+close_find_draws <- sample_closed_draws(findings_df$Citation, 4000)
+close_find_draws$venue <- "findings"
+
+main_prediction_posterior <- sapply(close_main_draws$lambda, function(lambda) rpois(1, lambda))
+findings_prediction_posterior <- sapply(close_find_draws$lambda, function(lambda) rpois(1, lambda))
+```
+
+
+```{r}
+a <- data.frame(y=main_prediction_posterior)
+a$venue = "pred_main"
+b <- data.frame(y=findings_prediction_posterior)
+b$venue = "pred_findings"
+
+c <- data.frame(y = df$Citation, venue=df$journal)
+c <- c[c$y < 50, ]
+tmp_df <- rbind(a,b,c)
+
+ggplot(tmp_df, aes(y, color=venue, fill=venue)) +
+  geom_density(alpha=.5) +
+  labs(title="predictive posterior draws", x=TeX("citations"), y="")
+```
+
+# Citation & Paper Length Model
+
+## Seperate
+
+```{r}
+# ####### Citation + length model separate #######
+# findings_df <- findings_df[quantile(findings_df$Citation) < 75, ]
+# main_df <- main_df[quantile(main_df$Citation) < 75, ]
+
+df <- rbind(findings_df, main_df)
+  
+y2 <- as.numeric(factor(df$type)) - 1
+sizes <- c(nrow(main_df), nrow(findings_df))
+seperate_data <- list(
+  N = nrow(df),
+  sizes = sizes,
+  J = 2,
+  y1 = df$Citation,
+  y2 = y2,
+  is_long = y2
+)
+
+seperate <- stan(file = "stan_models/citation-length-seperate.stan", 
+            data = seperate_data,
+            chains = 4,
+            iter = 4000,
+            warmup = 2000)
+```
+
+```{r}
+draws <- as.data.frame(seperate)
+
+# group together diff. indicies e.g. lambda[1], lambda[2] -> lambda[1,1]
+params <- extract(seperate, permuted=TRUE)
+dim(params$main_ypred)
+dim(main_df)
+```
+
+```{r}
+main_y <- main_df$Citation
+find_y <- findings_df$Citation
+
+main_ypred <- params$main_ypred
+find_ypred <- params$findings_ypred
+
+ppc_dens_overlay(main_y, main_ypred[1:25, 1:length(main_y)]) + xlim(0, 50)
+ppc_dens_overlay(find_y, find_ypred[1:25, 1:length(find_y)]) + xlim(0, 50)
+```
+
+## Hierarchical
+```{r}
+# Citation + length model hierarchical
+# findings_df <- findings_df[quantile(findings_df$Citation) < 75, ]
+# main_df <- main_df[quantile(main_df$Citation) < 75, ]
+
+df <- rbind(findings_df, main_df)
+  
+y2 <- as.numeric(factor(df$type)) - 1
+sizes <- c(nrow(main_df), nrow(findings_df))
+hierarchical_data <- list(
+  N = nrow(df),
+  sizes = sizes,
+  J = 2,
+  y1 = df$Citation,
+  y2 = y2,
+  is_long = y2
+)
+
+hierarchical <- stan(file = "stan_models/citation-length-hierarchical.stan", 
+            data = hierarchical_data,
+            chains = 4,
+            iter = 4000,
+            warmup = 2000)
+```
+
+```{r}
+# group together diff. indicies e.g. lambda[1], lambda[2] -> lambda[1,1]
+hierarchical_extracts <- extract(hierarchical, permuted=TRUE)
+dim(hierarchical_extracts$main_ypred)
+dim(main_df)
+```
+
+```{r}
+main_y <- main_df$Citation
+find_y <- findings_df$Citation
+
+main_ypred <- hierarchical_extracts$main_ypred
+find_ypred <- hierarchical_extracts$findings_ypred
+
+ppc_dens_overlay(main_y, main_ypred[1:25, 1:length(main_y)]) + xlim(0, 50)
+ppc_dens_overlay(find_y, find_ypred[1:25, 1:length(find_y)]) + xlim(0, 50)
+```
+
