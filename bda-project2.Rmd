@@ -76,6 +76,35 @@ ggplot(tmp_df, aes(y, color=venue, fill=venue)) +
   geom_density(alpha=.5) +
   labs(title="predictive posterior draws", x=TeX("citations"), y="")
 ```
+# Citation-Only Model (MCMC)
+
+## Non-informative priors
+
+```{r}
+simple_model_data <- list(N = length(data),
+                   sizes = sizes,
+                   J = 2,
+                   y = data)
+
+simple_non <- stan(file = "model_simple_non.stan", 
+            data = simple_model_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+simple_non
+```
+
+## Weakly-informative priors
+
+```{r}
+simple_weak <- stan(file = "model_simple_weak.stan", 
+            data = simple_model_data,
+            chains = 4,
+            iter = 3000,
+            warmup = 2000)
+simple_weak
+```
+
 
 # Citation & Paper Length Model
 

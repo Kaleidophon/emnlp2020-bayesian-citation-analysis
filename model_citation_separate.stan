@@ -49,7 +49,7 @@ generated quantities {
 vector[J] ypred;
   for(j in 1:J) {
     for (n in 1:N) {
-      real new_lambda = lambda[j] + c[j] * bernoulli_rng(beta_rng(2, 2));
+      real new_lambda = lambda[j] + c[j] * bernoulli_rng(rho[j]);
       ypred[j] = poisson_rng(new_lambda);
     }
   }
