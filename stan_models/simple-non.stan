@@ -14,8 +14,8 @@ model {
   int pos;
   pos = 1;
   
-  lambda[1] ~ gamma(0.3577605, 0.5981308); // Main
-  lambda[2] ~ gamma(0.2341311, 0.4838710); // Findings
+  lambda[1] ~ gamma(0.001, 0.001); // Main
+  lambda[2] ~ gamma(0.001, 0.001); // Findings
   
   for(j in 1:J) {
     segment(y, pos, sizes[j]) ~ poisson(lambda[j]);
@@ -24,5 +24,17 @@ model {
 }
 
 generated quantities {
+  vector[N] log_lik;
   int ypred[J] = poisson_rng(lambda);
+  
+  for (j in 1:J) {
+    for (i in 1:N) {
+      if (i < sizes[1]) {
+        log_lik[i] = poisson_lpmf(y[i] | lambda[1]);
+      }
+      else {
+        log_lik[i] = poisson_lpmf(y[i] | lambda[2]);
+      }
+    }
+  }
 }

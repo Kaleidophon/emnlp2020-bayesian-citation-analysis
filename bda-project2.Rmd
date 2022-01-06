@@ -86,7 +86,7 @@ simple_model_data <- list(N = length(data),
                    J = 2,
                    y = data)
 
-simple_non <- stan(file = "model_simple_non.stan", 
+simple_non <- stan(file = "stan_models/simple-non.stan", 
             data = simple_model_data,
             chains = 4,
             iter = 3000,
@@ -97,7 +97,7 @@ simple_non
 ## Weakly-informative priors
 
 ```{r}
-simple_weak <- stan(file = "model_simple_weak.stan", 
+simple_weak <- stan(file = "stan_models/simple-weak.stan", 
             data = simple_model_data,
             chains = 4,
             iter = 3000,
@@ -133,6 +133,7 @@ seperate <- stan(file = "stan_models/citation-length-seperate.stan",
             chains = 4,
             iter = 4000,
             warmup = 2000)
+seperate
 ```
 
 ```{r}
@@ -179,6 +180,8 @@ hierarchical <- stan(file = "stan_models/citation-length-hierarchical.stan",
             chains = 4,
             iter = 4000,
             warmup = 2000)
+
+hierarchical
 ```
 
 ```{r}
@@ -197,5 +200,21 @@ find_ypred <- hierarchical_extracts$findings_ypred
 
 ppc_dens_overlay(main_y, main_ypred[1:25, 1:length(main_y)]) + xlim(0, 50)
 ppc_dens_overlay(find_y, find_ypred[1:25, 1:length(find_y)]) + xlim(0, 50)
+```
+
+# Comparing models
+
+```{r}
+simple_non
+simple_weak
+separate
+hierarchical
+```
+
+```{r}
+loo_simple_non = loo(simple_non, save_psis = TRUE)
+loo_simple_weak = loo(simple_weak, save_psis = TRUE)
+loo_separate = loo(separate, save_psis = TRUE)
+loo_hierarchical = loo(hierarchical, save_psis = TRUE)
 ```
 
