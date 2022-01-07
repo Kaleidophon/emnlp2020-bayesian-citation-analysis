@@ -59,30 +59,27 @@ sample_closed_draws <- function(samples, n_draws, alpha = 0.001, beta = 0.001) {
   closed_draws <- rgamma(n_draws, alpha + sum(samples), beta + n)  
   return(data.frame(lambda=closed_draws))
 }
-close_main_draws <- sample_closed_draws(main_df$Citation, 4000)
-close_main_draws$venue <- "main"
-close_find_draws <- sample_closed_draws(findings_df$Citation, 4000)
-close_find_draws$venue <- "findings"
 
-main_prediction_posterior <- sapply(close_main_draws$lambda, function(lambda) rpois(1, lambda))
-findings_prediction_posterior <- sapply(close_find_draws$lambda, function(lambda) rpois(1, lambda))
+ppc_draws <- function(n_posterior_draws, y, alpha, beta) {
+  acc = c()
+  for(i in 1:n_posterior_draws) {
+    posterior_draws <- sample_closed_draws(y, length(y), alpha, beta)
+    ypreds <- sapply(posterior_draws$lambda, function(lambda) rpois(1, lambda))
+    acc <- append(acc, ypreds)
+  }
+  return(matrix(acc, ncol=length(y)))
+}
 ```
-
 
 ```{r}
-a <- data.frame(y=main_prediction_posterior)
-a$venue = "pred_main"
-b <- data.frame(y=findings_prediction_posterior)
-b$venue = "pred_findings"
 
-c <- data.frame(y = df$Citation, venue=df$journal)
-c <- c[c$y < 50, ]
-tmp_df <- rbind(a,b,c)
+main_ypred <- ppc_draws(25, main_df$Citation, alpha = 0.001, beta = 0.001)
+ppc_dens_overlay(main_df$Citation, main_ypred) + xli¢m(0, 50) + ggtitle("PPC Main Simple Non-informative") + theme(text = element_text(size = 16, family="sans"))   
 
-ggplot(tmp_df, aes(y, color=venue, fill=venue)) +
-  geom_density(alpha=.5) +
-  labs(title="predictive posterior draws", x=TeX("citations"), y="")
+find_ypred <- ppc_draws(25, findings_df$Citation, alpha = 0.001, beta = 0.001)
+ppc_dens_overlay(findings_df$Citation, find_ypred) + xlim(0, 50) + ggtitle("PPC Findings Simple Non-informative¢") + theme(text = element_text(size = 16, family="sans"))   
 ```
+
 # Citation-Only Model (MCMC)
 
 ## Non-informative priors
