@@ -221,10 +221,10 @@ loo_hierarchical = loo(hierarchical, save_psis = TRUE)
 ## Getting the elpd LOO
 
 ```{r}
-print(loo_simple_non$elpd_loo)
-print(loo_simple_weak$elpd_loo)
-print(loo_separate$elpd_loo)
-print(loo_hierarchical$elpd_loo)
+loo_simple_non[1]$estimates[1]
+loo_simple_weak[1]$estimates[1]
+loo_separate[1]$estimates[1]
+loo_hierarchical[1]$estimates[1]
 ```
 
 ## Plot $\hat{k}$values
