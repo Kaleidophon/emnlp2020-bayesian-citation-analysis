@@ -123,7 +123,7 @@ simple_weak
 # findings_df <- findings_df[quantile(findings_df$Citation) < 75, ]
 # main_df <- main_df[quantile(main_df$Citation) < 75, ]
 
-df <- rbind(findings_df, main_df)
+df <- rbind(main_df, findings_df)
   
 y2 <- as.numeric(factor(df$type)) - 1
 sizes <- c(nrow(main_df), nrow(findings_df))
