@@ -3,6 +3,7 @@ data {
   int<lower=0> J;
   int<lower=0> y[N];
   int sizes[J];
+  int<lower=0> draws;
 }
 
  parameters {
@@ -24,8 +25,16 @@ model {
 
 generated quantities {
   vector[N] log_lik;
-  int ypred[J] = poisson_rng(lambda);
+  vector[draws] findings_ypred;
+  vector[draws] main_ypred;
   
+  // Get predictive posterior draws
+  for (i in 1:draws) {
+    main_ypred[i] = poisson_rng(lambda[1]);
+    findings_ypred[i] = poisson_rng(lambda[2]);
+  }
+  
+  // Score log-likelihood for observations
   for (i in 1:N) {
     if (i < sizes[1]) {
       log_lik[i] = poisson_lpmf(y[i] | lambda[1]);

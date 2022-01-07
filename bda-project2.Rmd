@@ -33,8 +33,15 @@ main_df <- read.csv("main.tsv_type.csv")
 main_df$journal = "main"
 
 
+
 df <- rbind(findings_df, main_df)
 head(df)
+```
+
+```{r}
+sizes <- c(nrow(main_df), nrow(findings_df))
+data <- rbind(main_df, findings_df)$Citation
+sizes
 ```
 
 ```{r}
@@ -84,7 +91,8 @@ ggplot(tmp_df, aes(y, color=venue, fill=venue)) +
 simple_model_data <- list(N = length(data),
                    sizes = sizes,
                    J = 2,
-                   y = data)
+                   y = data,
+                   draws = 2000)
 
 simple_non <- stan(file = "stan_models/simple-non.stan", 
             data = simple_model_data,
@@ -108,7 +116,7 @@ simple_weak
 
 # Citation & Paper Length Model
 
-## Seperate
+## Separate
 
 ```{r}
 # ####### Citation + length model separate #######
@@ -119,28 +127,29 @@ df <- rbind(findings_df, main_df)
   
 y2 <- as.numeric(factor(df$type)) - 1
 sizes <- c(nrow(main_df), nrow(findings_df))
-seperate_data <- list(
+separate_data <- list(
   N = nrow(df),
   sizes = sizes,
   J = 2,
   y1 = df$Citation,
   y2 = y2,
-  is_long = y2
+  is_long = y2,
+  draws = 2000
 )
 
-seperate <- stan(file = "stan_models/citation-length-seperate.stan", 
-            data = seperate_data,
+separate <- stan(file = "stan_models/citation-length-separate.stan", 
+            data = separate_data,
             chains = 4,
             iter = 4000,
             warmup = 2000)
-seperate
+separate
 ```
 
 ```{r}
-draws <- as.data.frame(seperate)
+draws <- as.data.frame(separate)
 
 # group together diff. indicies e.g. lambda[1], lambda[2] -> lambda[1,1]
-params <- extract(seperate, permuted=TRUE)
+params <- extract(separate, permuted=TRUE)
 dim(params$main_ypred)
 dim(main_df)
 ```
@@ -172,7 +181,8 @@ hierarchical_data <- list(
   J = 2,
   y1 = df$Citation,
   y2 = y2,
-  is_long = y2
+  is_long = y2,
+  draws = 2000
 )
 
 hierarchical <- stan(file = "stan_models/citation-length-hierarchical.stan", 
@@ -205,16 +215,48 @@ ppc_dens_overlay(find_y, find_ypred[1:25, 1:length(find_y)]) + xlim(0, 50)
 # Comparing models
 
 ```{r}
-simple_non
-simple_weak
-separate
-hierarchical
-```
-
-```{r}
 loo_simple_non = loo(simple_non, save_psis = TRUE)
 loo_simple_weak = loo(simple_weak, save_psis = TRUE)
 loo_separate = loo(separate, save_psis = TRUE)
 loo_hierarchical = loo(hierarchical, save_psis = TRUE)
+```
+
+## Getting the elpd LOO
+
+```{r}
+print(loo_simple_non$elpd_loo)
+print(loo_simple_weak$elpd_loo)
+print(loo_separate$elpd_loo)
+print(loo_hierarchical$elpd_loo)
+```
+
+## Plot $\hat{k}$values
+
+```{r}
+# Simple model - non-informative priors
+plot(loo_simple_non)
+```
+```{r}
+# Simple model - weakly-informative priors
+plot(loo_simple_weak)
+```
+
+```{r}
+# Separate model
+plot(loo_separate)
+```
+
+```{r}
+# Hierarchical model
+plot(loo_hierarchical)
+```
+
+## Compute the effective number of parameters $p_\text{eff}$
+
+```{r}
+print(loo_simple_non$p_loo)
+print(loo_simple_weak$p_loo)
+print(loo_separate$p_loo)
+print(loo_hierarchical$p_loo)
 ```
 
