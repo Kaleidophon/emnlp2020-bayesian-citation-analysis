@@ -74,10 +74,27 @@ ppc_draws <- function(n_posterior_draws, y, alpha, beta) {
 ```{r}
 
 main_ypred <- ppc_draws(25, main_df$Citation, alpha = 0.001, beta = 0.001)
-ppc_dens_overlay(main_df$Citation, main_ypred) + xli¢m(0, 50) + ggtitle("PPC Main Simple Non-informative") + theme(text = element_text(size = 16, family="sans"))   
+ppc_dens_overlay(main_df$Citation, main_ypred) + xlim(0, 50) + ggtitle("PPC Main Simple Non-informative") + theme(text = element_text(size = 16, family="sans"))   
 
 find_ypred <- ppc_draws(25, findings_df$Citation, alpha = 0.001, beta = 0.001)
-ppc_dens_overlay(findings_df$Citation, find_ypred) + xlim(0, 50) + ggtitle("PPC Findings Simple Non-informative¢") + theme(text = element_text(size = 16, family="sans"))   
+ppc_dens_overlay(findings_df$Citation, find_ypred) + xlim(0, 50) + ggtitle("PPC Findings Simple Non-informative") + theme(text = element_text(size = 16, family="sans"))   
+```
+
+## probabilty of diff
+
+```{r}
+k <- min(length(main_ypred[1, ]), length(find_ypred[1, ]))
+transformed_dist <- sample(main_ypred[1, ], 1000, replace = TRUE) - sample(find_ypred[1, ], 1000, replace = TRUE)
+ggplot(data.frame(y_hat = transformed_dist), aes(y_hat)) +
+  geom_histogram(bins=30, color="black", fill="lightblue", alpha=.6) + 
+  geom_vline(aes(xintercept=mean(transformed_dist)), linetype="dashed", size=.5) +
+  labs(title="", x=TeX("\\tilde{y}_m - \\tilde{y}_f"), y="") + 
+  annotate("text", x=10, y=75, label= paste("mean =", round(mean(transformed_dist), 1)))
+  # ggtitle("Citation difference")
+P <- ecdf(transformed_dist)
+eps <- 1
+P(0+eps)-P(0-eps)
+
 ```
 
 # Citation-Only Model (MCMC)
